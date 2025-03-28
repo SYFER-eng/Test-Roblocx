@@ -24,14 +24,15 @@ function Library:CreateWindow()
     frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     frame.Parent = gui
 
+    local buttonCount = 0
     local buttons = {}
     local states = {}
     local callbacks = {}
 
     local function createButton(name, key)
-        local buttonCount = #buttons
-        local column = math.floor(buttonCount % COLUMNS)
+        local column = buttonCount % COLUMNS
         local row = math.floor(buttonCount / COLUMNS)
+        buttonCount = buttonCount + 1
         
         local button = Instance.new("TextButton")
         button.Size = UDim2.new(0, BUTTON_WIDTH, 0, BUTTON_HEIGHT)
