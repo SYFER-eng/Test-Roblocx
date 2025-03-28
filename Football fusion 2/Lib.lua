@@ -10,12 +10,10 @@ function Library:CreateWindow()
     gui.Name = tostring(math.random(1000000, 9999999))
     gui.ResetOnSpawn = false
     
-    if syn then
-        syn.protect_gui(gui)
-        gui.Parent = game.CoreGui
-    else
-        gui.Parent = game.CoreGui
-    end
+    pcall(function()
+        if syn then syn.protect_gui(gui) end
+        gui.Parent = game:GetService("CoreGui")
+    end)
 
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(0, (BUTTON_WIDTH + PADDING) * COLUMNS + PADDING, 0, 300)
