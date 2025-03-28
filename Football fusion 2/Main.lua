@@ -12,47 +12,86 @@ end
 
 local function getHumanoid()
     local character = getCharacter()
-    return character and character:FindFirstChild("Humanoid")
+    return character:FindFirstChild("Humanoid")
 end
 
 local function getRootPart()
     local character = getCharacter()
-    return character and character:FindFirstChild("HumanoidRootPart")
+    return character:FindFirstChild("HumanoidRootPart")
 end
 
--- Safe view adjustment
-local viewToggle = Window:AddToggle("Better View", "V", function(state)
+local function updateBallSize(ball, scale)
+    if not ball then return end
+    
+    -- Update visual size
+    local mesh = ball:FindFirstChildOfClass("SpecialMesh") or Instance.new("SpecialMesh", ball)
+    mesh.Scale = Vector3.new(scale, scale, scale)
+    
+    -- Update physical hitbox
+    ball.Size = Vector3.new(5 * scale, 5 * scale, 5 * scale)
+    
+    -- Update collision size
+    if ball:FindFirstChild("TouchInterest") then
+        ball.TouchInterest.Size = Vector3.new(6 * scale, 6 * scale, 6 * scale)
+    end
+    
+    -- Update any additional collision parts
+    for _, part in pairs(ball:GetChildren()) do
+        if part:IsA("BasePart") then
+            part.Size = part.Size * scale
+        end
+    end
+end
+
+local enhancedView = Window:AddToggle("Enhanced View", "V", function(state)
     local camera = workspace.CurrentCamera
     if state then
-        camera.CFrame = camera.CFrame * CFrame.new(0, 0.5, 0)
+        camera.CFrame = camera.CFrame * CFrame.new(0, 2, 0)
     else
-        camera.CFrame = camera.CFrame * CFrame.new(0, -0.5, 0)
+        camera.CFrame = camera.CFrame * CFrame.new(0, -2, 0)
     end
 end)
 
--- Movement enhancement
-local moveBoost = Window:AddToggle("Move Boost", "M", function(state)
+local quickMove = Window:AddToggle("Quick Move", "M", function(state)
     local humanoid = getHumanoid()
     if humanoid then
-        humanoid.WalkSpeed = state and 18 or 16
+        humanoid.WalkSpeed = state and 22 or 16
     end
 end)
 
--- Ball tracking
-local ballTrack = Window:AddToggle("Track Ball", "T", function(state)
+local smartTrack = Window:AddToggle("Smart Track", "T", function(state)
     -- Handled in RunService
 end)
 
--- Catch assist
-local catchAssist = Window:AddToggle("Catch Help", "C", function(state)
+local autoCatch = Window:AddToggle("Auto Catch", "C", function(state)
     -- Handled in RunService
 end)
 
--- Jump enhancement
-local jumpBoost = Window:AddToggle("Jump Help", "J", function(state)
+local speedBoost = Window:AddToggle("Speed Boost", "B", function(state)
     local humanoid = getHumanoid()
     if humanoid then
-        humanoid.JumpPower = state and 52 or 50
+        humanoid.WalkSpeed = state and 24 or 16
+    end
+end)
+
+local jumpBoost = Window:AddToggle("Jump Boost", "J", function(state)
+    local humanoid = getHumanoid()
+    if humanoid then
+        humanoid.JumpPower = state and 55 or 50
+    end
+end)
+
+local bigBall = Window:AddToggle("Bigger Ball", "X", function(state)
+    local ball = workspace:FindFirstChild("Football")
+    if ball then
+        updateBallSize(ball, state and 10 or 1)
+    end
+end)
+
+workspace.ChildAdded:Connect(function(child)
+    if child.Name == "Football" and bigBall.GetState() then
+        task.wait()  -- Wait for ball to fully load
+        updateBallSize(child, 10)
     end
 end)
 
@@ -66,16 +105,19 @@ local function findRemoteEvent(name)
 end
 
 local catchRemote = findRemoteEvent("catch")
+local tackleRemote = findRemoteEvent("tackle")
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     
     local keyBindings = {
-        [Enum.KeyCode.V] = viewToggle,
-        [Enum.KeyCode.M] = moveBoost,
-        [Enum.KeyCode.T] = ballTrack,
-        [Enum.KeyCode.C] = catchAssist,
-        [Enum.KeyCode.J] = jumpBoost
+        [Enum.KeyCode.V] = enhancedView,
+        [Enum.KeyCode.M] = quickMove,
+        [Enum.KeyCode.T] = smartTrack,
+        [Enum.KeyCode.C] = autoCatch,
+        [Enum.KeyCode.B] = speedBoost,
+        [Enum.KeyCode.J] = jumpBoost,
+        [Enum.KeyCode.X] = bigBall
     }
     
     if keyBindings[input.KeyCode] then
@@ -83,7 +125,6 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
-local lastCatchAttempt = 0
 RunService.RenderStepped:Connect(function(deltaTime)
     local character = getCharacter()
     local humanoid = getHumanoid()
@@ -91,40 +132,54 @@ RunService.RenderStepped:Connect(function(deltaTime)
     
     if not character or not humanoid or not rootPart then return end
     
-    if ballTrack.GetState() then
+    if smartTrack.GetState() then
         local ball = workspace:FindFirstChild("Football")
         if ball then
             local camera = workspace.CurrentCamera
             local cameraPosition = camera.CFrame.Position
             local ballPosition = ball.Position
-            camera.CFrame = camera.CFrame:Lerp(CFrame.new(cameraPosition, ballPosition), 0.1)
+            camera.CFrame = CFrame.new(cameraPosition, ballPosition)
         end
     end
     
-    if catchAssist.GetState() then
+    if autoCatch.GetState() then
         local ball = workspace:FindFirstChild("Football")
-        if ball and catchRemote and tick() - lastCatchAttempt > 0.1 then
+        if ball and catchRemote then
             local distance = (ball.Position - rootPart.Position).Magnitude
-            if distance < 8 then
-                lastCatchAttempt = tick()
+            if distance < 10 then
                 catchRemote:FireServer()
             end
         end
     end
     
-    if moveBoost.GetState() and UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
-        humanoid.WalkSpeed = math.min(humanoid.WalkSpeed * 1.01, 19)
+    if quickMove.GetState() and UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+        humanoid.WalkSpeed = humanoid.WalkSpeed * 1.02
+    end
+    
+    if speedBoost.GetState() then
+        humanoid.WalkSpeed = 24
+    end
+    
+    if jumpBoost.GetState() then
+        humanoid.JumpPower = 55
+    end
+    
+    if bigBall.GetState() then
+        local ball = workspace:FindFirstChild("Football")
+        if ball then
+            updateBallSize(ball, 10)
+        end
     end
 end)
 
 Players.LocalPlayer.CharacterAdded:Connect(function(newCharacter)
     task.wait(1)
-    if moveBoost.GetState() then
+    if speedBoost.GetState() then
         local humanoid = newCharacter:WaitForChild("Humanoid")
-        humanoid.WalkSpeed = 18
+        humanoid.WalkSpeed = 24
     end
     if jumpBoost.GetState() then
         local humanoid = newCharacter:WaitForChild("Humanoid")
-        humanoid.JumpPower = 52
+        humanoid.JumpPower = 55
     end
 end)
