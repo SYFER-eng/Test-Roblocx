@@ -1,4 +1,4 @@
-local Library = loadstring(game:HttpGet('YOUR_RAW_LINK_TO_LIBRARY'))()
+local Library = loadstring(game:HttpGet('https://raw.githubusercontent.com/SYFER-eng/Test-Roblocx/refs/heads/main/Football%20fusion%202/Lib.lua'))()
 local Window = Library:CreateWindow()
 
 local Players = game:GetService("Players")
