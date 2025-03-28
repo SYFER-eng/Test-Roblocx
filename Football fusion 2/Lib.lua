@@ -1,5 +1,10 @@
 local Library = {}
 
+local BUTTON_WIDTH = 140
+local BUTTON_HEIGHT = 30
+local PADDING = 10
+local COLUMNS = 2
+
 function Library:CreateWindow()
     local gui = Instance.new("ScreenGui")
     gui.Name = tostring(math.random(1000000, 9999999))
@@ -13,7 +18,7 @@ function Library:CreateWindow()
     end
 
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 150, 0, 200)
+    frame.Size = UDim2.new(0, (BUTTON_WIDTH + PADDING) * COLUMNS + PADDING, 0, 300)
     frame.Position = UDim2.new(0.85, 0, 0.4, 0)
     frame.BackgroundTransparency = 0.6
     frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -24,9 +29,14 @@ function Library:CreateWindow()
     local callbacks = {}
 
     local function createButton(name, key)
+        local buttonCount = #buttons
+        local column = math.floor(buttonCount % COLUMNS)
+        local row = math.floor(buttonCount / COLUMNS)
+        
         local button = Instance.new("TextButton")
-        button.Size = UDim2.new(0.9, 0, 0, 30)
-        button.Position = UDim2.new(0.05, 0, 0, #buttons * 35 + 10)
+        button.Size = UDim2.new(0, BUTTON_WIDTH, 0, BUTTON_HEIGHT)
+        button.Position = UDim2.new(0, PADDING + (BUTTON_WIDTH + PADDING) * column,
+                                  0, PADDING + (BUTTON_HEIGHT + PADDING) * row)
         button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
         button.BackgroundTransparency = 0.3
         button.Text = name .. " [" .. key .. "]"
@@ -60,7 +70,6 @@ function Library:CreateWindow()
         }
     end
 
-    -- Make UI draggable
     local dragging, dragInput, dragStart, startPos
     
     frame.InputBegan:Connect(function(input)
